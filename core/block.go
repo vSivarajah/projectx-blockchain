@@ -58,7 +58,7 @@ func NewBlockFromPrevHeader(prevHeader *Header, txx []*Transaction) (*Block, err
 	return NewBlock(header, txx)
 }
 
-func (b *Block) AddTransaction(tx *Transaction) {
+func (b *Block) AddTrangoaction(tx *Transaction) {
 	b.Transactions = append(b.Transactions, tx)
 }
 
