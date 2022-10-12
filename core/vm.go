@@ -1,25 +1,58 @@
 package core
 
+import (
+	"encoding/binary"
+)
+
 type Instruction byte
 
 const (
-	InstrPush Instruction = 0x0a // 10
-	InstrAdd  Instruction = 0x0b // 11
+	InstrPushInt  Instruction = 0x0a // 10
+	InstrAdd      Instruction = 0x0b // 11
+	InstrPushByte Instruction = 0x0c
+	InstrPack     Instruction = 0x0d
+	InstrSub      Instruction = 0x0e
+	InstrStore    Instruction = 0x0f
 )
 
-type VM struct {
-	data  []byte
-	ip    int // instruction pointer
-	stack []byte
-	sp    int // stack pointer
+type Stack struct {
+	data []any //interface{}
+	sp   int
 }
 
-func NewVM(data []byte) *VM {
+func NewStack(size int) *Stack {
+	return &Stack{
+		data: make([]any, size),
+		sp:   0,
+	}
+}
+
+func (s *Stack) Push(v any) {
+	s.data[s.sp] = v
+	s.sp++
+}
+
+func (s *Stack) Pop() any {
+	value := s.data[0]
+	s.data = append(s.data[:0], s.data[1:]...)
+	s.sp--
+
+	return value
+}
+
+type VM struct {
+	data          []byte
+	ip            int // instruction pointer
+	stack         *Stack
+	contractState *State
+}
+
+func NewVM(data []byte, contractState *State) *VM {
 	return &VM{
-		data:  data,
-		ip:    0,
-		stack: make([]byte, 1024),
-		sp:    -1,
+		contractState: contractState,
+		data:          data,
+		ip:            0,
+		stack:         NewStack(128),
 	}
 }
 
@@ -40,18 +73,60 @@ func (vm *VM) Run() error {
 
 func (vm *VM) Exec(instr Instruction) error {
 	switch instr {
-	case InstrPush:
-		vm.pushStack(vm.data[vm.ip-1])
+	case InstrStore:
+		var (
+			key             = vm.stack.Pop().([]byte)
+			value           = vm.stack.Pop()
+			serializedValue []byte
+		)
+
+		switch v := value.(type) {
+		case int:
+			serializedValue = serializeInt64(int64(v))
+		default:
+			panic("TODO: unknown type")
+
+		}
+
+		vm.contractState.Put(key, serializedValue)
+
+	case InstrPushInt:
+		vm.stack.Push(int(vm.data[vm.ip-1]))
+
+	case InstrPushByte:
+		vm.stack.Push(byte(vm.data[vm.ip-1]))
+
+	case InstrPack:
+		n := vm.stack.Pop().(int)
+		b := make([]byte, n)
+
+		for i := 0; i < n; i++ {
+			b[i] = vm.stack.Pop().(byte)
+		}
+
+		vm.stack.Push(b)
+
+	case InstrSub:
+		a := vm.stack.Pop().(int)
+		b := vm.stack.Pop().(int)
+		c := a - b
+		vm.stack.Push(c)
 	case InstrAdd:
-		a := vm.stack[0]
-		b := vm.stack[1]
+		a := vm.stack.Pop().(int)
+		b := vm.stack.Pop().(int)
 		c := a + b //3
-		vm.pushStack(c)
+		vm.stack.Push(c)
 	}
 	return nil
 }
 
-func (vm *VM) pushStack(b byte) {
-	vm.sp++
-	vm.stack[vm.sp] = b
+func serializeInt64(value int64) []byte {
+	buf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(buf, uint64(value))
+
+	return buf
+}
+
+func deserializeInt64(b []byte) int64 {
+	return int64(binary.LittleEndian.Uint64(b))
 }
