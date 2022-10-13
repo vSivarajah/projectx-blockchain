@@ -1,9 +1,9 @@
 build:
-	go build -o ./projectx-blockchain
+	go build -o ./bin/projectx-blockchain
 
 
 run: build
-	./projectx-blockchain
+	./bin/projectx-blockchain
 
 test:
 	go test ./...
