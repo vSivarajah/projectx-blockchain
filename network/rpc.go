@@ -7,7 +7,6 @@ import (
 	"io"
 	"net"
 
-	"github.com/sirupsen/logrus"
 	"github.com/vsivarajah/projectx-blockchain/core"
 )
 
@@ -19,6 +18,7 @@ const (
 	MessageTypeGetBlocks MessageType = 0x3
 	MessageTypeStatus    MessageType = 0x4
 	MessageTypeGetStatus MessageType = 0x5
+	MessageTypeBlocks    MessageType = 0x6
 )
 
 type RPC struct {
@@ -57,11 +57,6 @@ func DefaultRPCDecodeFunc(rpc RPC) (*DecodedMessage, error) {
 		return nil, fmt.Errorf("failed to decode message from %s: %s", rpc.From, err)
 	}
 
-	logrus.WithFields(logrus.Fields{
-		"from": rpc.From,
-		"type": msg.Header,
-	}).Debug("new incoming message")
-
 	switch msg.Header {
 	case MessageTypeTx:
 		tx := new(core.Transaction)
@@ -92,12 +87,31 @@ func DefaultRPCDecodeFunc(rpc RPC) (*DecodedMessage, error) {
 		if err := gob.NewDecoder(bytes.NewReader(msg.Data)).Decode(statusMessage); err != nil {
 			return nil, err
 		}
-
 		return &DecodedMessage{
 			From: rpc.From,
 			Data: statusMessage,
 		}, nil
+	case MessageTypeGetBlocks:
+		getBlocks := new(GetBlocksMessage)
+		if err := gob.NewDecoder(bytes.NewReader(msg.Data)).Decode(getBlocks); err != nil {
+			return nil, err
+		}
 
+		return &DecodedMessage{
+			From: rpc.From,
+			Data: getBlocks,
+		}, nil
+
+	case MessageTypeBlocks:
+		blocks := new(BlocksMessage)
+		if err := gob.NewDecoder(bytes.NewReader(msg.Data)).Decode(blocks); err != nil {
+			return nil, err
+		}
+
+		return &DecodedMessage{
+			From: rpc.From,
+			Data: blocks,
+		}, nil
 	default:
 		return nil, fmt.Errorf("invalid message header %x", msg.Header)
 	}
