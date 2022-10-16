@@ -47,7 +47,7 @@ func (bc *Blockchain) AddBlock(b *Block) error {
 		if err := vm.Run(); err != nil {
 			return err
 		}
-
+		fmt.Printf("state => %+v\n", bc.contractState.data)
 	}
 
 	return bc.addBlockWithoutValidation(b)
@@ -77,9 +77,8 @@ func (bc *Blockchain) Height() uint32 {
 
 func (bc *Blockchain) addBlockWithoutValidation(b *Block) error {
 	bc.lock.Lock()
-	defer bc.lock.Unlock()
-
 	bc.headers = append(bc.headers, b.Header)
+	bc.lock.Unlock()
 
 	bc.logger.Log(
 		"msg", "adding new block",

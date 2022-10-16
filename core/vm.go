@@ -31,8 +31,8 @@ func NewStack(size int) *Stack {
 }
 
 func (s *Stack) Push(v any) {
-	s.data = append([]any{v}, s.data...)
-	//s.data[s.sp] = v
+	//s.data = append([]any{v}, s.data...)
+	s.data[s.sp] = v
 	s.sp++
 }
 
@@ -112,6 +112,7 @@ func (vm *VM) Exec(instr Instruction) error {
 
 	case InstrPack:
 		n := vm.stack.Pop().(int)
+
 		b := make([]byte, n)
 
 		for i := 0; i < n; i++ {
