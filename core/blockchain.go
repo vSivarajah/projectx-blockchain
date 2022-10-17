@@ -22,7 +22,7 @@ func NewBlockchain(l log.Logger, genesis *Block) (*Blockchain, error) {
 	bc := &Blockchain{
 		contractState: NewState(),
 		headers:       []*Header{},
-		store:         NewMemstore(),
+		store:         NewMemorystore(),
 		logger:        l,
 	}
 

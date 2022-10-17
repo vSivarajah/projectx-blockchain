@@ -7,7 +7,7 @@ type Storage interface {
 type MemoryStore struct {
 }
 
-func NewMemstore() *MemoryStore {
+func NewMemorystore() *MemoryStore {
 	return &MemoryStore{}
 }
 

@@ -8,12 +8,12 @@ import (
 
 func TestKeypairSignVerifySuccess(t *testing.T) {
 	privKey := GeneratePrivateKey()
-
+	publicKey := privKey.PublicKey()
 	msg := []byte("hello world")
 	sig, err := privKey.Sign(msg)
 	assert.Nil(t, err)
 
-	assert.True(t, sig.Verify(privKey.PublicKey(), msg))
+	assert.True(t, sig.Verify(publicKey, msg))
 }
 
 func TestKeypairSignVerifyFailed(t *testing.T) {
