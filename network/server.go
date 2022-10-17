@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/go-kit/log"
+	"github.com/vsivarajah/projectx-blockchain/api"
 	"github.com/vsivarajah/projectx-blockchain/core"
 	"github.com/vsivarajah/projectx-blockchain/crypto"
 	"github.com/vsivarajah/projectx-blockchain/types"
@@ -18,6 +19,7 @@ import (
 var defaultBlocktime = 5 * time.Second
 
 type ServerOpts struct {
+	ApiListenAddr string
 	SeedNodes     []string
 	ListenAddr    string
 	TCPTransport  *TCPTransport
@@ -42,6 +44,7 @@ type Server struct {
 	isValidator bool
 	rpcCh       chan RPC
 	quitCh      chan struct{}
+	txChan      chan *core.Transaction
 }
 
 func NewServer(opts ServerOpts) (*Server, error) {
@@ -62,6 +65,23 @@ func NewServer(opts ServerOpts) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Channel being used to communicate between the JSON RPC Server
+	// and the node that will process this message.
+	txChan := make(chan *core.Transaction)
+
+	// Only boot up the API server if the config has a valid port number.
+	if len(opts.ApiListenAddr) > 0 {
+		apiServerConfig := api.ServerConfig{
+			Logger:     opts.Logger,
+			ListenAddr: opts.ApiListenAddr,
+		}
+		apiServer := api.NewServer(apiServerConfig, chain, txChan)
+
+		go apiServer.Start()
+
+		opts.Logger.Log("msg", "JSON API server runnning port", "port", opts.ApiListenAddr)
+	}
+
 	peerCh := make(chan *TCPPeer)
 	tr := NewTCPTransport(opts.ListenAddr, peerCh)
 
@@ -75,6 +95,7 @@ func NewServer(opts ServerOpts) (*Server, error) {
 		isValidator:  opts.PrivateKey != nil,
 		rpcCh:        make(chan RPC),
 		quitCh:       make(chan struct{}, 1),
+		txChan:       txChan,
 	}
 
 	s.TCPTransport.peerCh = peerCh
@@ -113,6 +134,7 @@ func (s *Server) Start() {
 	s.bootstrapNetwork()
 
 	s.Logger.Log("msg", "accepting TCP connection on ", "addr", s.ListenAddr, "id", s.ID)
+
 free:
 	for {
 		select {
@@ -127,6 +149,10 @@ free:
 			}
 			s.Logger.Log("msg", "peer added to the server", "outgoing", peer.Outgoing, "addr", peer.conn.RemoteAddr())
 
+		case tx := <-s.txChan:
+			if err := s.processTransaction(tx); err != nil {
+				s.Logger.Log("process TX error", err)
+			}
 		case rpc := <-s.rpcCh:
 			msg, err := s.RPCDecodeFunc(rpc)
 			if err != nil {
