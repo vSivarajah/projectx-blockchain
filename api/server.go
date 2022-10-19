@@ -107,7 +107,7 @@ func (s *Server) handleGetBlock(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, APIError{Error: err.Error()})
 	}
 
-	block, err := s.bc.GetBlockbyHash(types.HashFromBytes(b))
+	block, err := s.bc.GetBlockByHash(types.HashFromBytes(b))
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, APIError{Error: err.Error()})
 

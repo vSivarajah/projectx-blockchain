@@ -1,6 +1,7 @@
 package core
 
 import (
+	"encoding/gob"
 	"fmt"
 	"math/rand"
 
@@ -8,7 +9,30 @@ import (
 	"github.com/vsivarajah/projectx-blockchain/types"
 )
 
+type TxType byte
+
+const (
+	TxTypeCollection TxType = iota // 0x0
+	TxTypeMint                     // 0x01
+)
+
+type CollectionTx struct {
+	Fee      int64
+	MetaData []byte
+}
+
+type MintTx struct {
+	Fee             int64
+	NFT             types.Hash
+	Collection      types.Hash
+	MetaData        []byte
+	CollectionOwner crypto.PublicKey
+	Signature       crypto.Signature
+}
+
 type Transaction struct {
+	Type      TxType
+	TxInner   any
 	Data      []byte
 	From      crypto.PublicKey
 	Signature *crypto.Signature
@@ -21,7 +45,7 @@ type Transaction struct {
 func NewTransaction(data []byte) *Transaction {
 	return &Transaction{
 		Data:  data,
-		Nonce: rand.Int63n(100000000000000),
+		Nonce: rand.Int63n(1000000000000000),
 	}
 }
 
@@ -37,6 +61,7 @@ func (tx *Transaction) Sign(privKey crypto.PrivateKey) error {
 	if err != nil {
 		return err
 	}
+
 	tx.From = privKey.PublicKey()
 	tx.Signature = sig
 
@@ -54,10 +79,16 @@ func (tx *Transaction) Verify() error {
 
 	return nil
 }
+
 func (tx *Transaction) Decode(dec Decoder[*Transaction]) error {
 	return dec.Decode(tx)
 }
 
 func (tx *Transaction) Encode(enc Encoder[*Transaction]) error {
 	return enc.Encode(tx)
+}
+
+func init() {
+	gob.Register(CollectionTx{})
+	gob.Register(MintTx{})
 }

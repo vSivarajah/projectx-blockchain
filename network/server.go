@@ -99,7 +99,7 @@ func NewServer(opts ServerOpts) (*Server, error) {
 	}
 
 	s.TCPTransport.peerCh = peerCh
-	// if we dont got any processor from the server options, we going to use
+	// if we dont have any processor from the server options, we going to use
 	// the server as default.
 	if s.RPCProcessor == nil {
 		s.RPCProcessor = s
