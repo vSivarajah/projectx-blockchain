@@ -43,6 +43,10 @@ func (k PrivateKey) PublicKey() PublicKey {
 	return elliptic.MarshalCompressed(k.key.PublicKey, k.key.PublicKey.X, k.key.PublicKey.Y)
 }
 
+func (k PublicKey) String() string {
+	return hex.EncodeToString(k)
+}
+
 func (k PublicKey) Address() types.Address {
 
 	h := sha256.Sum256(k)
