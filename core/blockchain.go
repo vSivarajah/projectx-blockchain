@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/go-kit/log"
+	"github.com/vsivarajah/projectx-blockchain/crypto"
 	"github.com/vsivarajah/projectx-blockchain/types"
 )
 
@@ -32,7 +33,10 @@ func NewBlockchain(l log.Logger, genesis *Block) (*Blockchain, error) {
 	//We should create all states inside the scope of the new blockchain
 
 	// TODO: read this from disk later on
+	coinbase := crypto.PublicKey{}
+	fmt.Println(coinbase.Address())
 	accountState := NewAccountState()
+	accountState.CreateAccount(coinbase.Address())
 
 	bc := &Blockchain{
 		contractState:   NewState(),
