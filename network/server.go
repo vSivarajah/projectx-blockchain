@@ -61,13 +61,7 @@ func NewServer(opts ServerOpts) (*Server, error) {
 		opts.Logger = log.With(opts.Logger, "addr", opts.ID)
 	}
 
-	accountState := core.NewAccountState()
-
-	if opts.PrivateKey != nil {
-		accountState.AddBalance(opts.PrivateKey.PublicKey().Address(), 1000000)
-	}
-
-	chain, err := core.NewBlockchain(opts.Logger, genesisBlock(), accountState)
+	chain, err := core.NewBlockchain(opts.Logger, genesisBlock())
 	if err != nil {
 		return nil, err
 	}
@@ -181,11 +175,14 @@ free:
 
 func (s *Server) validatorLoop() {
 	ticker := time.NewTicker(s.BlockTime)
+	
 	s.Logger.Log("msg", "Starting validator loop", "blockTime", s.BlockTime)
 
 	for {
 		<-ticker.C
-		s.createNewBlock()
+		if err := s.createNewBlock(); err != nil {
+			s.Logger.Log("create block error", err)
+		}
 	}
 }
 
@@ -213,6 +210,7 @@ func (s *Server) processBlocksMessage(from net.Addr, data *BlocksMessage) error 
 
 	for _, block := range data.Blocks {
 		if err := s.chain.AddBlock(block); err != nil {
+			s.Logger.Log("error", err.Error())
 			return err
 		}
 	}
@@ -323,6 +321,7 @@ func (s *Server) processGetStatusMessage(from net.Addr, data *GetStatusMessage) 
 
 func (s *Server) processBlock(b *core.Block) error {
 	if err := s.chain.AddBlock(b); err != nil {
+		s.Logger.Log("error", err.Error())
 		return err
 	}
 	go s.broadcastBlock(b)
