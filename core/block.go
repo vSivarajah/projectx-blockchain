@@ -58,8 +58,11 @@ func NewBlockFromPrevHeader(prevHeader *Header, txx []*Transaction) (*Block, err
 	return NewBlock(header, txx)
 }
 
-func (b *Block) AddTrangoaction(tx *Transaction) {
+func (b *Block) AddTransaction(tx *Transaction) {
 	b.Transactions = append(b.Transactions, tx)
+	hash, _ := CalculateDataHash(b.Transactions)
+
+	b.DataHash = hash
 }
 
 func (b *Block) Sign(privKey crypto.PrivateKey) error {
@@ -123,6 +126,7 @@ func CalculateDataHash(txx []*Transaction) (hash types.Hash, err error) {
 			return
 		}
 	}
+
 	hash = sha256.Sum256(buf.Bytes())
 	return
 }
