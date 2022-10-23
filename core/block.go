@@ -22,7 +22,9 @@ type Header struct {
 func (h *Header) Bytes() []byte {
 	buf := &bytes.Buffer{}
 	enc := gob.NewEncoder(buf)
-	enc.Encode(h)
+	if err := enc.Encode(h); err != nil {
+		panic(err)
+	}
 
 	return buf.Bytes()
 }
@@ -81,6 +83,8 @@ func (b *Block) Verify() error {
 	if b.Signature == nil {
 		return fmt.Errorf("Block has no signature")
 	}
+
+	fmt.Printf("%+v\n", b.Header)
 
 	if !b.Signature.Verify(b.Validator, b.Header.Bytes()) {
 		return fmt.Errorf("Block has invalid signature")

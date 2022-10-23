@@ -2,6 +2,7 @@ package core
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 	"time"
 
@@ -10,6 +11,22 @@ import (
 	"github.com/vsivarajah/projectx-blockchain/types"
 )
 
+func TestVerifyBlockTamperHeight(t *testing.T) {
+	privKey := crypto.GeneratePrivateKey()
+	b := randomBlock(t, 0, types.Hash{})
+
+	assert.Nil(t, b.Sign(privKey))
+	assert.Nil(t, b.Verify())
+
+	bHeader := b.Header.Bytes()
+	b.Header.Version = 1000
+
+	fmt.Println(bytes.Compare(bHeader, b.Header.Bytes()))
+	// b.hash = types.Hash{}
+
+	assert.NotNil(t, b.Verify())
+}
+
 func TestSignBlock(t *testing.T) {
 	privKey := crypto.GeneratePrivateKey()
 	b := randomBlock(t, 0, types.Hash{})
@@ -17,7 +34,7 @@ func TestSignBlock(t *testing.T) {
 	assert.NotNil(t, b.Signature)
 }
 
-func TestVerifyBlock(t *testing.T) {
+func TestVerifyBlockTamperValidator(t *testing.T) {
 	privKey := crypto.GeneratePrivateKey()
 	b := randomBlock(t, 0, types.Hash{})
 
@@ -26,10 +43,6 @@ func TestVerifyBlock(t *testing.T) {
 
 	otherPrivKey := crypto.GeneratePrivateKey()
 	b.Validator = otherPrivKey.PublicKey()
-
-	assert.NotNil(t, b.Verify())
-
-	b.Height = 100
 
 	assert.NotNil(t, b.Verify())
 }
