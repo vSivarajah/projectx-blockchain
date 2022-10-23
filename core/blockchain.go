@@ -198,9 +198,9 @@ func (bc *Blockchain) addBlockWithoutValidation(b *Block) error {
 	}
 
 	bc.stateLock.Unlock()
-	fmt.Println("=========ACCOUNT STATE============")
-	fmt.Printf("%+v\n", bc.accountState.accounts)
-	fmt.Println("=========ACCOUNT STATE============")
+	// fmt.Println("=========ACCOUNT STATE============")
+	// fmt.Printf("%+v\n", bc.accountState.accounts)
+	// fmt.Println("=========ACCOUNT STATE============")
 
 	bc.lock.Lock()
 	bc.headers = append(bc.headers, b.Header)
